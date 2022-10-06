@@ -1,0 +1,175 @@
+localrules: all, all_tracks, all_ctss, all_tpm, download_chrom_size, download_bigiwig, download_cage_ctss, download_reftss, make_genomedata_archives, make_track_file, convert_to_tpm, make_xref_CAGE, filter_TSS, make_include_coord
+
+CELLTYPES = ["K562"]
+HISTONES = ["H3K4me1", "H3K4me3", "H3K27me3", "H3K36me3", "H3K9me3", "H3K27ac", "H3K9ac", "DNase"]
+
+CELLTYPE_ACCESSION = {
+  "K562": {
+		"H3K4me1": "ENCFF444SGK",
+		"H3K4me3": "ENCFF712XRE",
+		"H3K27me3": "ENCFF928NWQ",
+		"H3K36me3": "ENCFF440XMD",
+		"H3K9me3": "ENCFF812HRW",
+		"H3K27ac": "ENCFF779QTH",
+		"H3K9ac": "ENCFF866KTJ",
+		"DNase": "ENCFF868NHV"
+	}
+}
+  
+CELLTYPE_CTSS = {
+	"K562": {
+		"CNhs12334": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep1.CNhs12334.10824-111C5.hg38.nobarcode.ctss.bed.gz",
+		"CNhs12335": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep2.CNhs12335.10825-111C6.hg38.nobarcode.ctss.bed.gz",
+		"CNhs12336": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep3.CNhs12336.10826-111C7.hg38.nobarcode.ctss.bed.gz",
+		"CNhs11250": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562.CNhs11250.10454-106G4.hg38.nobarcode.ctss.bed.gz"
+	}
+}
+
+############
+# FUNCTION #
+############
+
+def get_accession(wildcards):
+	return CELLTYPE_ACCESSION[wildcards.celltype][wildcards.histone]
+
+def get_ctss_url(wildcards):
+	return CELLTYPE_CTSS[wildcards.celltype][wildcards.ctss_id]
+
+def get_ctss_ids(celltype):
+	return list(CELLTYPE_CTSS[celltype].keys())
+
+#################
+# RUN_ALL rules #
+#################
+
+rule all:
+	input:
+		expand("output/{celltype}/Data/{histone}.genomedata",
+			celltype=CELLTYPES, histone=HISTONES)
+
+rule all_tracks:
+	input:
+		expand("output/{celltype}/Data/tracks.tsv", celltype=CELLTYPES)
+
+rule all_ctss:
+	input:
+		expand("output/{celltype}/Data/{ctss_id}.ctss.bed.gz", celltype=CELLTYPES, ctss_id=CELLTYPE_CTSS["K562"].keys())
+
+rule all_tpm:
+	input:
+		[f"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz" for celltype in CELLTYPES for ctss_id in CELLTYPE_CTSS[celltype]]
+   
+   
+   #for celltype in CELLTYPES:
+	   #for ctss_id in CELLTYPE_CTSS[celltype]:
+		   #(celltype, ctss_id)
+
+##################
+# DOWNLOAD rules #
+##################
+
+rule download_chrom_size:
+	output:
+		"output/hg38.chrom.sizes"
+	shell:
+		"wget -O {output} https://hgdownload.cse.ucsc.edu/goldenpath/hg38/bigZips/hg38.chrom.sizes"
+
+rule download_bigiwig:
+	params:
+		accession=get_accession
+	output:
+		"output/{celltype}/Data/{histone}.bigWig"
+	shell:
+		"wget -O {output} https://www.encodeproject.org/files/{params.accession}/@@download/{params.accession}.bigWig"
+
+rule download_cage_ctss:
+	params:
+		url=get_ctss_url
+	output:
+		"output/{celltype}/Data/{ctss_id}.ctss.bed.gz"
+	shell:
+		"wget -O {output} {params.url}"
+		
+rule download_reftss:
+	output:
+		"output/refTSS_v3.3_human_coordinate.hg38.bed.gz"
+	shell:
+		"wget -O {output} http://reftss.clst.riken.jp/datafiles/3.3/human/refTSS_v3.3_human_coordinate.hg38.bed.gz"
+
+rule make_genomedata_archives:
+	input:
+		bw="output/{celltype}/Data/{histone}.bigWig",
+		sizes="output/hg38.chrom.sizes"
+	output:
+		"output/{celltype}/Data/{histone}.genomedata"
+	conda:
+		"envs/segwayVE_genomedata.yaml"
+	shell:
+		"""
+		genomedata-load --sizes --sequence {input.sizes} \
+		--track {wildcards.histone}={input.bw} \
+		output/{wildcards.celltype}/Data/{wildcards.histone}.genomedata
+		"""
+
+rule make_track_file:
+	output:
+		"output/{celltype}/Data/tracks.tsv"
+	params:
+		histones=HISTONES
+	script:
+		"scripts/make_track_file.py"
+
+rule convert_to_tpm:
+	input:
+		"output/{celltype}/Data/{ctss_id}.ctss.bed.gz"
+	output:
+		"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz"
+	shell:
+		"bash scripts/preprocess_TSS/convert_to_TPM.sh {input} | gzip > {output}"
+
+rule make_xref_CAGE:
+	input:
+		reftss="output/refTSS_v3.3_human_coordinate.hg38.bed.gz",
+		replicates=lambda wildcards: expand("output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz", celltype=wildcards.celltype, ctss_id=CELLTYPE_CTSS[wildcards.celltype].keys())
+	output:
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.bed.gz"
+	shell:
+		"bash scripts/preprocess_TSS/xref_CAGE.sh {input} | gzip > {output}" 
+
+rule filter_TSS:
+	input:
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.bed.gz"
+	output:
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.bed"
+	shell:
+		"bash scripts/preprocess_TSS/filter_refTSS.sh {input} {wildcards.tpm} > {output}"
+
+rule make_include_coord:
+	input: 
+		genome_sizes="output/hg38.chrom.sizes",
+		reftss="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.bed",
+	output:
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed"
+	shell:
+		"bash scripts/make_include_coords.sh {wildcards.bp_expand} {input} > {output}"
+
+rule segway_train_unsupervised:
+	input:
+		track="output/{celltype}/Data/tracks.tsv",
+		include_coord="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed",
+		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
+	output:
+		"output/{celltype}/Results/train_{tpm}_{bp_expand}/params/params.params"
+	shell:
+		"bash scripts/running_VE/train_unsupervised.sh {output} {input}"
+
+rule segway_annot_unsupervised:
+	input:
+		train_dir="output/{celltype}/Results/train_{tpm}_{bp_expand}/params/params.params",
+		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
+	output:
+		"output/{celltype}/Results/annot_{tpm}_{bp_expand}/segway.bed.gz"
+	shell:
+		"""
+		bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}
+		"""

@@ -1,0 +1,4 @@
+channels:
+    - bioconda
+dependencies:
+    - genomedata=1.5.0
