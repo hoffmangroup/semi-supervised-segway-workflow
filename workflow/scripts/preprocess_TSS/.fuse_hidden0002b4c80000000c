@@ -11,4 +11,4 @@ THRESHOLD=${2}
 # 6: strand
 # chr1  629191  629220  .   0.269275    +
 
-zcat ${REFTSS_FILE} | awk '($5 >= "'${THRESHOLD}'")'
+zcat ${REFTSS_FILE} | awk '($5 >= "'${THRESHOLD}'" && $6 == "+")'

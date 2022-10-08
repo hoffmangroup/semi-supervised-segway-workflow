@@ -8,8 +8,8 @@
 #SBATCH -p hoffmangroup
 set -o nounset -o pipefail -o errexit
 
-# export SEGWAY_CLUSTER=local
-# export SEGWAY_NUM_LOCAL_JOBS=20
+export SEGWAY_CLUSTER=local
+export SEGWAY_NUM_LOCAL_JOBS=20
 
 # source activate segway_VE_testPR
 
@@ -18,7 +18,8 @@ TRAIN_DIR=${1/"${TARGET}"/}
 
 TRACKLIST=${2}
 INCLUDE_COORDS=${3}
-GD_FILE=${@:4}
+VIRTUAL_EVIDENCE_FILE=${4}
+GD_FILE=${@:5}
 
 NUM_MIXTURES=3
 
@@ -26,9 +27,10 @@ NUM_MIXTURES=3
 
 SEGWAY_RAND_SEED=1498730685 #define seed for reproducibility
 
-segway --cluster-opt="-p hoffmangroup" \
+segway --mem-usage=2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
     train --tracks-from="${TRACKLIST}" \
     --include-coords="${INCLUDE_COORDS}" \
+    --virtual-evidence="${VIRTUAL_EVIDENCE_FILE}" \
     --num-labels=10 --num-instances=10 \
     --mixture-components=${NUM_MIXTURES} \
     --resolution=1 \
