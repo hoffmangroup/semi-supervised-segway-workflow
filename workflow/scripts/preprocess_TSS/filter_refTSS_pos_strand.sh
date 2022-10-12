@@ -10,4 +10,4 @@ REFTSS_FILE=${1}
 # 6: strand
 # chr1  629191  629220  .   0.269275    +
 
-zcat ${REFTSS_FILE} | awk '($6 == "+")'
+cat ${REFTSS_FILE} | awk '($6 == "+")'

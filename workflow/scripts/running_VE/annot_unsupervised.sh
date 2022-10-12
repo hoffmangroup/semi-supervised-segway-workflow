@@ -21,6 +21,6 @@ export SEGWAY_RAND_SEED=1498730685 #define seed for reproducibility
 
 
 segway \
-    --cluster-opt="-p hoffmangroup" \
+    --cluster-opt="-p hoffmangroup --time=24:00:00 --mem=8000" \
     annotate ${GD_FILE} "${TRAIN_DIR}" "${ANNOT_DIR}"
 

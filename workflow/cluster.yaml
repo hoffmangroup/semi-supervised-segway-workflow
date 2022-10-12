@@ -3,24 +3,24 @@ __default__:
     nodes: 1
     cpus-per-task: 1
     mem-per-cpu: 4G
-    job-name: unsup_train
+    job-name: default
     time: 0-24:00:00
     partition: hoffmangroup
 
 segway_train_unsupervised:
     ntasks: 1
     nodes: 1
-    cpus-per-task: 16
+    cpus-per-task: 1
     mem-per-cpu: 4G
     job-name: unsup_train
-    time: 0-24:00:00
+    time: 7-00:00:00
     partition: hoffmangroup
 
 segway_annot_unsupervised:
     ntasks: 1
     nodes: 1
-    cpus-per-task: 10
+    cpus-per-task: 1
     mem-per-cpu: 4G
     job-name: VE_unsup
-    time: 0-24:00:00
+    time: 7-00:00:00
     partition: hoffmangroup

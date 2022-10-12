@@ -9,7 +9,7 @@
 set -o nounset -o pipefail -o errexit
 
 # export SEGWAY_CLUSTER=local
-# export SEGWAY_NUM_LOCAL_JOBS=20
+# export SEGWAY_NUM_LOCAL_JOBS=30
 
 # source activate segway_VE_testPR
 
@@ -26,7 +26,7 @@ NUM_MIXTURES=3
 
 SEGWAY_RAND_SEED=1498730685 #define seed for reproducibility
 
-segway --cluster-opt="-p hoffmangroup" \
+segway --cluster-opt="-p hoffmangroup --time=24:00:00" \
     train --tracks-from="${TRACKLIST}" \
     --include-coords="${INCLUDE_COORDS}" \
     --num-labels=10 --num-instances=10 \
