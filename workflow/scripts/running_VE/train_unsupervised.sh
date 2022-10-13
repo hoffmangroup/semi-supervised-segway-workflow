@@ -36,4 +36,15 @@ segway --cluster-opt="-p hoffmangroup --time=24:00:00" \
     ${GD_FILE} "${TRAIN_DIR}" \
 
 
-# sbatch --export=ALL "${VE_DIR}/scripts/identify_sbatch_template.sh"
+ARCHIVES="accumulators "
+ARCHIVES+="cmdline "
+ARCHIVES+="intermediate "
+ARCHIVES+="likelihood "
+ARCHIVES+="log "
+ARCHIVES+="observations "
+ARCHIVES+="output "
+ARCHIVES+="triangulation"
+
+for archive in ${ARCHIVES}; do
+	tar -cvz -C ${TRAIN_DIR}/${archive} . -f ${TRAIN_DIR}/${archive}.tar.gz --remove-files
+done

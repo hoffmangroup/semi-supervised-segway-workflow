@@ -1,6 +1,6 @@
 localrules: all_genomedata, all_tracks, all_ctss, all_tpm, download_chrom_size, download_bigiwig, download_cage_ctss, download_reftss, make_genomedata_archives, make_track_file, convert_to_tpm, make_xref_CAGE, filter_TSS, make_include_coord, compute_priors, make_ve_file, filter_TSS_pos_strand
 
-CELLTYPES = ["K562"]
+CELLTYPES = ["K562"] #, "HepG2", "GM12878"
 HISTONES = ["H3K4me1", "H3K4me3", "H3K27me3", "H3K36me3", "H3K9me3", "H3K27ac", "H3K9ac", "DNase"]
 UNIFORM_REL_CONF = [
 	(1.50, 50.0),
@@ -46,8 +46,6 @@ CELLTYPE_ACCESSION = {
 		"DNase": "ENCFF960FMM"
 	}
 }
-
-
 
 CELLTYPE_CTSS = {
 	"K562": {
@@ -98,15 +96,19 @@ rule all_ctss:
 	input:
 		expand("output/{celltype}/Data/{ctss_id}.ctss.bed.gz", celltype=CELLTYPES, ctss_id=CELLTYPE_CTSS["K562"].keys())
 
-rule all_tpm:
+#rule all_tpm:
+	#input:
+		#[f"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz" for celltype in CELLTYPES for ctss_id in CELLTYPE_CTSS[celltype]]
+
+rule all_segway_unsup:
 	input:
-		[f"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz" for celltype in CELLTYPES for ctss_id in CELLTYPE_CTSS[celltype]]
+		expand("output/{celltype}/Results/train_2.5_10000/params/params.params", celltype=CELLTYPES)
 
 rule all_segway:
 	input:
 		[f"output/{celltype}/Results/train_2.5_10000_{uniform}_{relconf}/params/params.params" for celltype in CELLTYPES for uniform, relconf in UNIFORM_REL_CONF]
 
-rule all_segway_train_VE:
+rule all_segway_train_ve:
 	input:
 		[f"output/K562/Results/train_2.5_10000_{uniform}_{relconf}/params/params.params" for uniform, relconf in UNIFORM_REL_CONF]
 
@@ -235,7 +237,7 @@ rule segway_train_unsupervised:
 	shell:
 		"bash scripts/running_VE/train_unsupervised.sh {output} {input}"
 
-rule segway_train_VE:
+rule segway_train_ve:
 	input:
 		track="output/{celltype}/Data/tracks.tsv",
 		include_coord="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed",
@@ -253,7 +255,13 @@ rule segway_annot_unsupervised:
 	output:
 		"output/{celltype}/Results/annot_{tpm}_{bp_expand}/segway.bed.gz"
 	shell:
-		"""
-		bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}
-		"""
-		
+		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"
+
+rule segway_annot_ve:
+	input:
+		train_dir="output/{celltype}/Results/train_{tpm}_{bp_expand}_{uniform}_{relconf}/params/params.params",
+		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
+	output:
+		"output/{celltype}/Results/annot_{tpm}_{bp_expand}_{uniform}_{relconf}/segway.bed.gz"
+	shell:
+		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"		

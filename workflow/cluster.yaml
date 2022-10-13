@@ -16,6 +16,15 @@ segway_train_unsupervised:
     time: 7-00:00:00
     partition: hoffmangroup
 
+segway_train_ve:
+    ntasks: 1
+    nodes: 1
+    cpus-per-task: 1
+    mem-per-cpu: 4G
+    job-name: unsup_train
+    time: 7-00:00:00
+    partition: hoffmangroup
+
 segway_annot_unsupervised:
     ntasks: 1
     nodes: 1

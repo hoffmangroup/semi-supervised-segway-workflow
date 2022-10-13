@@ -24,3 +24,16 @@ segway \
     --cluster-opt="-p hoffmangroup --time=24:00:00 --mem=8000" \
     annotate ${GD_FILE} "${TRAIN_DIR}" "${ANNOT_DIR}"
 
+ARCHIVES="auxiliary "
+ARCHIVES+="cmdline "
+ARCHIVES+="log "
+ARCHIVES+="observations "
+ARCHIVES+="output "
+ARCHIVES+="posterior "
+ARCHIVES+="triangulation "
+ARCHIVES+="viterbi"
+
+
+for archive in ${ARCHIVES}; do
+	tar -cvz -C ${ANNOT_TARGET}/${archive} . -f ${ANNOT_TARGET}/${archive}.tar.gz --remove-files
+done

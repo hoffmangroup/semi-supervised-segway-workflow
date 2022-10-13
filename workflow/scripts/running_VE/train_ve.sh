@@ -8,8 +8,8 @@
 #SBATCH -p hoffmangroup
 set -o nounset -o pipefail -o errexit
 
-export SEGWAY_CLUSTER=local
-export SEGWAY_NUM_LOCAL_JOBS=20
+# export SEGWAY_CLUSTER=local
+# export SEGWAY_NUM_LOCAL_JOBS=20
 
 # source activate segway_VE_testPR
 
@@ -37,5 +37,16 @@ segway --mem-usage=2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
     --max-train-rounds=40 \
     ${GD_FILE} "${TRAIN_DIR}" \
 
+ARCHIVES="accumulators "
+ARCHIVES+="cmdline "
+ARCHIVES+="intermediate "
+ARCHIVES+="likelihood "
+ARCHIVES+="log "
+ARCHIVES+="observations "
+ARCHIVES+="output "
+ARCHIVES+="triangulation"
 
-# sbatch --export=ALL "${VE_DIR}/scripts/identify_sbatch_template.sh"
+for archive in ${ARCHIVES}; do
+	tar -cvz -C ${TRAIN_DIR}/${archive} . -f ${TRAIN_DIR}/${archive}.tar.gz --remove-files
+done
+
