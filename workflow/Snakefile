@@ -112,6 +112,10 @@ rule all_segway_train_ve:
 	input:
 		[f"output/K562/Results/train_2.5_10000_{uniform}_{relconf}/params/params.params" for uniform, relconf in UNIFORM_REL_CONF]
 
+rule all_archive_train_ve:
+	input:
+		[f"output/K562/Results/train_2.5_10000_{uniform}_{relconf}/accumulators.tar.gz" for uniform, relconf in UNIFORM_REL_CONF]
+
 ##################
 # DOWNLOAD rules #
 ##################
@@ -146,8 +150,8 @@ rule download_reftss:
 
 rule make_genomedata_archives:
 	input:
-		bw="output/{celltype}/Data/{histone}.bigWig",
-		sizes="output/hg38.chrom.sizes"
+		bw=rules.download_bigiwig.output,
+		sizes=rules.download_chrom_size.output
 	output:
 		"output/{celltype}/Data/{histone}.genomedata"
 	conda:
@@ -169,7 +173,7 @@ rule make_track_file:
 
 rule convert_to_tpm:
 	input:
-		"output/{celltype}/Data/{ctss_id}.ctss.bed.gz"
+		rules.download_cage_ctss.output
 	output:
 		"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz"
 	shell:
@@ -177,7 +181,7 @@ rule convert_to_tpm:
 
 rule make_xref_CAGE:
 	input:
-		reftss="output/refTSS_v3.3_human_coordinate.hg38.bed.gz",
+		reftss=rules.download_reftss.output,
 		replicates=lambda wildcards: expand("output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz", celltype=wildcards.celltype, ctss_id=CELLTYPE_CTSS[wildcards.celltype].keys())
 	output:
 		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.bed.gz"
@@ -188,78 +192,79 @@ rule filter_TSS:
 	input:
 		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.bed.gz"
 	output:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.both-strand.bed"
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.both-strand.bed"
 	shell:
 		"bash scripts/preprocess_TSS/filter_refTSS.sh {input} {wildcards.tpm} > {output}"
 
 
 rule filter_TSS_pos_strand:
 	input:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.both-strand.bed"
+		rules.filter_TSS.output
 	output:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.bed"
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.bed"
 	shell:
 		"bash scripts/preprocess_TSS/filter_refTSS_pos_strand.sh {input} > {output}"
 
 rule make_include_coord:
 	input: 
-		genome_sizes="output/hg38.chrom.sizes",
-		reftss="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.bed",
+		genome_sizes=rules.download_chrom_size.output,
+		reftss=rules.filter_TSS_pos_strand.output
 	output:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed"
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.BP_EXPAND_{bp_expand}_bothsides.sorted.merged.chr21.bed"
 	shell:
 		"bash scripts/computing_priors/make_include_coords.sh {wildcards.bp_expand} {input} > {output}"
 
 rule compute_priors:
 	input:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.both-strand.bed"
+		rules.filter_TSS_pos_strand.output,
 	output:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.VE_tanh_uniform_delta_{uniform}_{relconf}rel_priors.bed"
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.VE_tanh_uniform_delta.UNIFORM_{uniform}.RELCONF_{relconf,\d+.\d+}.bed"
 	shell:
 		"bash scripts/computing_priors/compute_priors.sh {input} tanh_uniform_delta {wildcards.uniform} {wildcards.relconf} > {output}"
 
 
 rule make_ve_file:
 	input:
-		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.VE_tanh_uniform_delta_{uniform}_{relconf}rel_priors.bed",
+		rules.compute_priors.output,
+		rules.download_chrom_size.output
 	output:
-		#"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.VE_tanh_uniform_delta_{uniform}_{relconf}rel.pos-strand.{bp_expand}bp.bed"
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.VE_tanh_uniform_delta.UNIFORM_{uniform}.RELCONF_{relconf}.BP_EXPAND_{bp_expand}.bed"
 	shell:
 		"bash scripts/computing_priors/make_virtual_evidence_file.sh {wildcards.bp_expand} {wildcards.uniform} {wildcards.relconf} {input} > {output}"
 
 rule segway_train_unsupervised:
 	input:
-		track="output/{celltype}/Data/tracks.tsv",
-		include_coord="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed",
+		track=rules.make_track_file.output,
+		include_coord=rules.make_include_coord.output,
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
-		"output/{celltype}/Results/train_{tpm}_{bp_expand}/params/params.params"
+		"output/{celltype}/Results/train_unsupervised_{tpm}_{bp_expand}/params/params.params"
 	shell:
 		"bash scripts/running_VE/train_unsupervised.sh {output} {input}"
 
-rule segway_train_ve:
-	input:
-		track="output/{celltype}/Data/tracks.tsv",
-		include_coord="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.{bp_expand}bothsides.sorted.merged.chr21.bed",
-		ve="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.VE_tanh_uniform_delta_{uniform}_{relconf}rel.pos-strand.{bp_expand}bp.bed",
-		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
-	output:
-		"output/{celltype}/Results/train_{tpm}_{bp_expand}_{uniform}_{relconf}/params/params.params"
-	shell:
-		"bash scripts/running_VE/train_ve.sh {output} {input}"
-
 rule segway_annot_unsupervised:
 	input:
-		train_dir="output/{celltype}/Results/train_{tpm}_{bp_expand}/params/params.params",
+		train_dir=rules.segway_train_unsupervised.output,
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
 		"output/{celltype}/Results/annot_{tpm}_{bp_expand}/segway.bed.gz"
 	shell:
 		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"
 
+rule segway_train_ve:
+	input:
+		track=rules.make_track_file.output,
+		include_coord=rules.make_include_coord.output,
+		ve=rules.make_ve_file.output,
+		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
+	output:
+		"output/{celltype}/Results/train_ve_{tpm}_{bp_expand}_{uniform}_{relconf}/params/params.params"
+	shell:
+		"bash scripts/running_VE/train_ve.sh {output} {input}"
+
 rule segway_annot_ve:
 	input:
-		train_dir="output/{celltype}/Results/train_{tpm}_{bp_expand}_{uniform}_{relconf}/params/params.params",
+		train_dir=rules.segway_train_ve.output,
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
 		"output/{celltype}/Results/annot_{tpm}_{bp_expand}_{uniform}_{relconf}/segway.bed.gz"
