@@ -1,0 +1,57 @@
+from params import (CELLTYPES, HISTONES, UNIFORM_REL_CONF, CELLTYPE_ACCESSION, CELLTYPE_CTSS)
+
+#################
+# RUN_ALL rules #
+#################
+
+
+rule all_percentile:
+	input:
+		[f"output/{celltype}/Data/{histone}.0.9995_percentile.bed" for celltype in CELLTYPES for histone in HISTONES]
+
+rule make_chr_pseudo:
+	output:
+		"output/chrPseudo.extents.bed"
+	shell:
+		"""
+		echo -e "chrPseudo\t0\t248956422" > {output}
+		"""
+
+rule bigwig_to_bedgraph:
+	input:
+		"output/{celltype}/Data/{histone}.bigWig"
+	output:
+		"output/{celltype}/Data/{histone}.bedGraph"
+	conda:
+		"envs/bigWig_percentile_calculation.yml"
+	shell:
+		"""
+		bigWigToBedGraph {input} {output}
+		"""
+	
+cmd = r"""awk -vFS="\t" -vOFS="\t" '{ $5 = $4; $4 = $1; $1 = "chrPseudo"; print $0; }'"""
+rule bg_to_pseudo_chr_bed:
+	input:
+		rules.bigwig_to_bedgraph.output
+	output:
+		"output/{celltype}/Data/{histone}.pseudoChr.bed"
+	conda:
+		"envs/bigWig_percentile_calculation.yml"
+	shell:
+		"""
+		{cmd} {input} | sort-bed - > {output}
+		"""
+
+rule make_percentile:
+	input:
+		chr_pseudo=rules.make_chr_pseudo.output,
+		bed=rules.bg_to_pseudo_chr_bed.output
+	output:
+		"output/{celltype}/Data/{histone,[^.]+}.{percentile}_percentile.bed"
+	conda:
+		"envs/bigWig_percentile_calculation.yml"
+	shell:
+		"""
+		bedmap --min-memory --echo --kth {wildcards.percentile} {input.chr_pseudo} {input.bed} > {output}
+		"""
+

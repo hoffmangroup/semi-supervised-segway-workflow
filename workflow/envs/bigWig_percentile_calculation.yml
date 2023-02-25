@@ -1,0 +1,8 @@
+name: bigWig_percentile_calculation
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - ucsc-bigwigtobedgraph=377
+  - bedops=2.4.37
+prefix: /mnt/work1/users/home2/mickaelm/miniconda3/envs/bigWig_percentile_calculation
