@@ -1,9 +1,11 @@
-last action: generate output/HepG2/Results/annot_unsupervised_2.5_10000_scoring_ve_master.tsv
+last action: plot PR curve
 
 todo:
-- start testing R script line by line
+- why prom label is not label 0 in VE runs
+- run segzoo to find promoter labels
 - combine rules with same shell command (segway_annot?)
-- generate all annotations
 
 done:
 - download file to windows Documents/Rplot folder
+- start testing R script line by line
+- generate all annotations

@@ -8,10 +8,8 @@
 #SBATCH -p hoffmangroup
 set -o nounset -o pipefail -o errexit
 
-# export SEGWAY_CLUSTER=local
-# export SEGWAY_NUM_LOCAL_JOBS=20
-
-# source activate segway_VE_testPR
+#export SEGWAY_CLUSTER=local
+#export SEGWAY_NUM_LOCAL_JOBS=20
 
 TARGET="/params/params.params"
 TRAIN_DIR=${1/"${TARGET}"/}
@@ -27,7 +25,7 @@ NUM_MIXTURES=3
 
 SEGWAY_RAND_SEED=1498730685 #define seed for reproducibility
 
-segway --mem-usage=2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
+segway --cluster-opt="-p hoffmangroup" --mem-usage=8,16,32,64 \
     train --tracks-from="${TRACKLIST}" \
     --include-coords="${INCLUDE_COORDS}" \
     --virtual-evidence="${VIRTUAL_EVIDENCE_FILE}" \
@@ -49,4 +47,3 @@ ARCHIVES+="triangulation"
 for archive in ${ARCHIVES}; do
 	tar -cvz -C ${TRAIN_DIR}/${archive} . -f ${TRAIN_DIR}/${archive}.tar.gz --remove-files
 done
-

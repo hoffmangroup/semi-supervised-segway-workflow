@@ -21,7 +21,7 @@ export SEGWAY_RAND_SEED=1498730685 #define seed for reproducibility
 
 
 segway \
-    --cluster-opt="-p hoffmangroup --time=24:00:00 --mem=8000" \
+    --cluster-opt="-p hoffmangroup" --mem-usage=8,16,32,64 \
     annotate ${GD_FILE} "${TRAIN_DIR}" "${ANNOT_DIR}"
 
 ARCHIVES="auxiliary "
@@ -35,5 +35,5 @@ ARCHIVES+="viterbi"
 
 
 for archive in ${ARCHIVES}; do
-	tar -cvz -C ${ANNOT_TARGET}/${archive} . -f ${ANNOT_TARGET}/${archive}.tar.gz --remove-files
+	tar -cvz -C ${ANNOT_DIR}/${archive} . -f ${ANNOT_DIR}/${archive}.tar.gz --remove-files
 done

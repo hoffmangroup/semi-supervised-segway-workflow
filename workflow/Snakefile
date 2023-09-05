@@ -1,70 +1,5 @@
-localrules: all_genomedata, all_tracks, all_ctss, all_tpm, download_chrom_size, download_bigiwig, download_cage_ctss, download_reftss, make_genomedata_archives, make_track_file, convert_to_tpm, make_xref_CAGE, filter_TSS, make_include_coord, compute_priors, make_ve_file, filter_TSS_pos_strand
-
-CELLTYPES = ["K562"] #, "HepG2", "GM12878"
-HISTONES = ["H3K4me1", "H3K4me3", "H3K27me3", "H3K36me3", "H3K9me3", "H3K27ac", "H3K9ac", "DNase"]
-UNIFORM_REL_CONF = [
-	(1.50, 50.0),
-	(1.50, 250.0),
-	(1.50, 100.0),
-	(1.50, 25.0),
-	(1.50, 10.0),
-	(1.50, 5.0),
-	(1.25, 50.0),
-	(1.00, 50.0),
-	(0.85, 50.0),
-	]
-
-CELLTYPE_ACCESSION = {
-	"K562": {
-		"H3K4me1": "ENCFF444SGK",
-		"H3K4me3": "ENCFF712XRE",
-		"H3K27me3": "ENCFF928NWQ",
-		"H3K36me3": "ENCFF440XMD",
-		"H3K9me3": "ENCFF812HRW",
-		"H3K27ac": "ENCFF779QTH",
-		"H3K9ac": "ENCFF866KTJ",
-		"DNase": "ENCFF868NHV"
-	},
-	"HepG2": {
-		"H3K4me1": "ENCFF058GCZ",
-		"H3K4me3": "ENCFF736LHE",
-		"H3K27me3": "ENCFF529HLC",
-		"H3K36me3": "ENCFF247LOP",
-		"H3K9me3": "ENCFF881LOL",
-		"H3K27ac": "ENCFF022TZG",
-		"H3K9ac": "ENCFF053ROV",
-		"DNase": "ENCFF113VII"
-	},
-	"GM12878": {
-		"H3K4me1": "ENCFF564KBE",
-		"H3K4me3": "ENCFF776DPQ",
-		"H3K27me3": "ENCFF919DOR",
-		"H3K36me3": "ENCFF831WJT",
-		"H3K9me3": "ENCFF776OVW",
-		"H3K27ac": "ENCFF180LKW",
-		"H3K9ac": "ENCFF599TRR",
-		"DNase": "ENCFF960FMM"
-	}
-}
-
-CELLTYPE_CTSS = {
-	"K562": {
-		"CNhs12334": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep1.CNhs12334.10824-111C5.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12335": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep2.CNhs12335.10825-111C6.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12336": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562%2520ENCODE%252c%2520biol_rep3.CNhs12336.10826-111C7.hg38.nobarcode.ctss.bed.gz",
-		"CNhs11250": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/chronic%2520myelogenous%2520leukemia%2520cell%2520line%253aK562.CNhs11250.10454-106G4.hg38.nobarcode.ctss.bed.gz"
-	},
-	"HepG2": {
-		"CNhs12328": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/hepatocellular%2520carcinoma%2520cell%2520line%253a%2520HepG2%2520ENCODE%252c%2520biol_rep1.CNhs12328.10818-111B8.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12329": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/hepatocellular%2520carcinoma%2520cell%2520line%253a%2520HepG2%2520ENCODE%252c%2520biol_rep2.CNhs12329.10819-111B9.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12330": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/hepatocellular%2520carcinoma%2520cell%2520line%253a%2520HepG2%2520ENCODE%252c%2520biol_rep3.CNhs12330.10820-111C1.hg38.nobarcode.ctss.bed.gz"
-	},
-	"GM12878": {
-		"CNhs12331": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/B%2520lymphoblastoid%2520cell%2520line%253a%2520GM12878%2520ENCODE%252c%2520biol_rep1.CNhs12331.10821-111C2.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12332": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/B%2520lymphoblastoid%2520cell%2520line%253a%2520GM12878%2520ENCODE%252c%2520biol_rep2.CNhs12332.10822-111C3.hg38.nobarcode.ctss.bed.gz",
-		"CNhs12333": "https://fantom.gsc.riken.jp/5/datafiles/reprocessed/hg38_v1/basic/human.cell_line.hCAGE/B%2520lymphoblastoid%2520cell%2520line%253a%2520GM12878%2520ENCODE%252c%2520biol_rep3.CNhs12333.10823-111C4.hg38.nobarcode.ctss.bed.gz"
-	}
-}
+localrules: download_chrom_size, download_bigiwig, download_cage_ctss, download_reftss, make_genomedata_archives, make_track_file, convert_to_tpm, make_xref_CAGE, filter_TSS, make_include_coord, compute_priors, make_ve_file, filter_TSS_pos_strand, exclude_chrom, aggregate_PR_per_annot_run
+from params import (CELLTYPES, HISTONES, UNIFORM_REL_CONF, CELLTYPE_ACCESSION, CELLTYPE_CTSS, PR_TPM)
 
 ############
 # FUNCTION #
@@ -83,38 +18,33 @@ def get_ctss_ids(celltype):
 # RUN_ALL rules #
 #################
 
+rule all_bigwig:
+	input:
+		expand("output/{celltype}/Data/{histone}.bigWig", celltype=CELLTYPES, histone=HISTONES)
+
 rule all_genomedata:
 	input:
-		expand("output/{celltype}/Data/{histone}.genomedata",
-			celltype=CELLTYPES, histone=HISTONES)
+		expand("output/{celltype}/Data/{histone}.genomedata", celltype=CELLTYPES, histone=HISTONES)
 
-rule all_tracks:
+rule segway_main:
 	input:
-		expand("output/{celltype}/Data/tracks.tsv", celltype=CELLTYPES)
-
-rule all_ctss:
-	input:
-		expand("output/{celltype}/Data/{ctss_id}.ctss.bed.gz", celltype=CELLTYPES, ctss_id=CELLTYPE_CTSS["K562"].keys())
-
-#rule all_tpm:
-	#input:
-		#[f"output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz" for celltype in CELLTYPES for ctss_id in CELLTYPE_CTSS[celltype]]
-
-rule all_segway_unsup:
-	input:
-		expand("output/{celltype}/Results/train_2.5_10000/params/params.params", celltype=CELLTYPES)
+		"output/K562/Results/annot_ve_2.5_10000_1.5_50.0_200/segway.bed.gz",
+		"output/K562/Results/annot_unsupervised_2.5_10000/segway.bed.gz"
 
 rule all_segway:
 	input:
-		[f"output/{celltype}/Results/train_2.5_10000_{uniform}_{relconf}/params/params.params" for celltype in CELLTYPES for uniform, relconf in UNIFORM_REL_CONF]
+		[f"output/{celltype}/Results/annot_ve_2.5_10000_{uniform}_{relconf}_200/segway.bed.gz" for uniform, relconf in UNIFORM_REL_CONF for celltype in CELLTYPES],
+		[f"output/{celltype}/Results/annot_unsupervised_2.5_10000/segway.bed.gz" for celltype in CELLTYPES]
 
-rule all_segway_train_ve:
+rule all_score_ve:
 	input:
-		[f"output/K562/Results/train_2.5_10000_{uniform}_{relconf}/params/params.params" for uniform, relconf in UNIFORM_REL_CONF]
+		[f"output/{celltype}/Results/annot_ve_2.5_10000_{uniform}_{relconf}_200_scoring_ve_master.tsv" for uniform, relconf in UNIFORM_REL_CONF for celltype in CELLTYPES],
+		[f"output/{celltype}/Results/annot_unsupervised_2.5_10000_scoring_ve_master.tsv" for celltype in CELLTYPES]
 
-rule all_archive_train_ve:
+rule all_segzoo:
 	input:
-		[f"output/K562/Results/train_2.5_10000_{uniform}_{relconf}/accumulators.tar.gz" for uniform, relconf in UNIFORM_REL_CONF]
+		[f"output/{celltype}/Results/segzoo_ve_2.5_10000_{uniform}_{relconf}_200" for uniform, relconf in UNIFORM_REL_CONF for celltype in CELLTYPES],
+		[f"output/{celltype}/Results/segzoo_unsupervised_2.5_10000" for celltype in CELLTYPES]
 
 ##################
 # DOWNLOAD rules #
@@ -141,7 +71,7 @@ rule download_cage_ctss:
 		"output/{celltype}/Data/{ctss_id}.ctss.bed.gz"
 	shell:
 		"wget -O {output} {params.url}"
-		
+
 rule download_reftss:
 	output:
 		"output/refTSS_v3.3_human_coordinate.hg38.bed.gz"
@@ -155,7 +85,7 @@ rule make_genomedata_archives:
 	output:
 		"output/{celltype}/Data/{histone}.genomedata"
 	conda:
-		"envs/segwayVE_genomedata.yaml"
+		"segway_py36"
 	shell:
 		"""
 		genomedata-load --sizes --sequence {input.sizes} \
@@ -185,8 +115,10 @@ rule make_xref_CAGE:
 		replicates=lambda wildcards: expand("output/{celltype}/Data/{ctss_id}.ctss.TPM.bed.gz", celltype=wildcards.celltype, ctss_id=CELLTYPE_CTSS[wildcards.celltype].keys())
 	output:
 		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.bed.gz"
-	shell: 
-		"bash scripts/preprocess_TSS/xref_CAGE.sh {input} | gzip > {output}" 
+	conda:
+		"segway_pybedtools"
+	shell:
+		"bash scripts/preprocess_TSS/xref_CAGE.sh {input} | gzip > {output}"
 
 rule filter_TSS:
 	input:
@@ -196,6 +128,13 @@ rule filter_TSS:
 	shell:
 		"bash scripts/preprocess_TSS/filter_refTSS.sh {input} {wildcards.tpm} > {output}"
 
+rule exclude_chrom:
+	input:
+		rules.filter_TSS.output
+	output:
+		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.both-strand.notchr21.bed"
+	shell:
+		"bash scripts/exclude_chrom.sh {input} chr21 > {output}"
 
 rule filter_TSS_pos_strand:
 	input:
@@ -206,11 +145,13 @@ rule filter_TSS_pos_strand:
 		"bash scripts/preprocess_TSS/filter_refTSS_pos_strand.sh {input} > {output}"
 
 rule make_include_coord:
-	input: 
+	input:
 		genome_sizes=rules.download_chrom_size.output,
 		reftss=rules.filter_TSS_pos_strand.output
 	output:
 		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.BP_EXPAND_{bp_expand}_bothsides.sorted.merged.chr21.bed"
+	conda:
+		"segway_pybedtools"
 	shell:
 		"bash scripts/computing_priors/make_include_coords.sh {wildcards.bp_expand} {input} > {output}"
 
@@ -229,6 +170,8 @@ rule make_ve_file:
 		rules.download_chrom_size.output
 	output:
 		"output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm,[^_]+}.pos-strand.VE_tanh_uniform_delta.UNIFORM_{uniform}.RELCONF_{relconf}.BP_EXPAND_{bp_expand}.bed"
+	conda:
+		"segway_pybedtools"
 	shell:
 		"bash scripts/computing_priors/make_virtual_evidence_file.sh {wildcards.bp_expand} {wildcards.uniform} {wildcards.relconf} {input} > {output}"
 
@@ -239,6 +182,8 @@ rule segway_train_unsupervised:
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
 		"output/{celltype}/Results/train_unsupervised_{tpm}_{bp_expand}/params/params.params"
+	conda:
+		"segway_py36"
 	shell:
 		"bash scripts/running_VE/train_unsupervised.sh {output} {input}"
 
@@ -247,18 +192,22 @@ rule segway_annot_unsupervised:
 		train_dir=rules.segway_train_unsupervised.output,
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
-		"output/{celltype}/Results/annot_{tpm}_{bp_expand}/segway.bed.gz"
+		"output/{celltype}/Results/annot_unsupervised_{tpm}_{bp_expand}/segway.bed.gz"
+	conda:
+		"segway_py36"
 	shell:
 		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"
 
 rule segway_train_ve:
 	input:
 		track=rules.make_track_file.output,
-		include_coord=rules.make_include_coord.output,
-		ve=rules.make_ve_file.output,
+		include_coord="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.BP_EXPAND_{bp_expand}_bothsides.sorted.merged.chr21.bed",
+		ve="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{tpm}.pos-strand.VE_tanh_uniform_delta.UNIFORM_{uniform}.RELCONF_{relconf}.BP_EXPAND_{ve_bp_expand}.bed",
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
-		"output/{celltype}/Results/train_ve_{tpm}_{bp_expand}_{uniform}_{relconf}/params/params.params"
+		"output/{celltype}/Results/train_ve_{tpm}_{bp_expand}_{uniform}_{relconf}_{ve_bp_expand}/params/params.params"
+	conda:
+		"segway_py36"
 	shell:
 		"bash scripts/running_VE/train_ve.sh {output} {input}"
 
@@ -267,6 +216,44 @@ rule segway_annot_ve:
 		train_dir=rules.segway_train_ve.output,
 		genomedatas=lambda wildcards: expand("output/{celltype}/Data/{histone}.genomedata", celltype=wildcards.celltype, histone=HISTONES)
 	output:
-		"output/{celltype}/Results/annot_{tpm}_{bp_expand}_{uniform}_{relconf}/segway.bed.gz"
+		"output/{celltype}/Results/annot_ve_{tpm}_{bp_expand}_{uniform}_{relconf}_{ve_bp_expand}/segway.bed.gz"
+	conda:
+		"segway_py36"
 	shell:
-		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"		
+		"bash scripts/running_VE/annot_unsupervised.sh {input.train_dir} {output} {input.genomedatas}"
+
+rule scoring_PR:
+	input:
+		ref_tss="output/{celltype}/Data/refTSS_v3.3_human_coordinate.hg38.xCAGE.TPM_{pr_tpm}.both-strand.bed",
+		segway_annot="output/{celltype}/Results/annot_{unique_id}/segway.bed.gz"
+	output:
+		temp("output/{celltype}/Results/annot_{unique_id}_{pr_tpm,\d+\.\d+}_scoring_ve.tsv")
+	conda:
+		"segway_pybedtools"
+	shell:
+		"python scripts/scoring_VE/compute_postolerant_PR.py {input.segway_annot} {input.ref_tss} 500 chr21 {wildcards.pr_tpm} {output}"
+
+rule aggregate_PR_per_annot_run:
+	input:
+ 		[f"output/{{celltype}}/Results/annot_{{unique_id}}_{pr_tpm}_scoring_ve.tsv" for pr_tpm in PR_TPM]
+	output:
+		"output/{celltype}/Results/annot_{unique_id}_scoring_ve_master.tsv"
+	shell:
+		"""
+		head -n 1 {input[0]} > {output}
+		for i in {input}; do
+			tail -n +2 $i >> {output};
+		done
+		"""
+
+rule run_segzoo:
+	input:
+		annot="output/{celltype}/Results/annot_{unique_id}/segway.bed.gz",
+		train="output/{celltype}/Results/train_{unique_id}/params/params.params"
+	output:
+		directory("output/{celltype}/Results/segzoo_{unique_id}")
+	conda:
+		"segzoo_env"
+	shell:
+		"segzoo -j 8 --dendrogram --parameters {input.train} --outdir {output} {input.annot}" 
+ 
